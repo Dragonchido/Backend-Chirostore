@@ -309,10 +309,13 @@ async def calculate_price(original_price: float):
 @app.get("/health")
 async def health_check():
     """Health check untuk monitoring"""
+    from datetime import datetime
     return {
         "status": "healthy",
         "service": "VirtuSIM API Backend",
-        "api_key_configured": bool(VIRTUSIM_API_KEY)
+        "api_key_configured": bool(VIRTUSIM_API_KEY),
+        "timestamp": datetime.utcnow().isoformat(),
+        "version": "1.0.0"
     }
 
 # Error handlers
