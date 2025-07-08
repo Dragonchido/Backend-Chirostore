@@ -26,12 +26,14 @@ Upload semua file dari repository ini ke Hugging Face Space:
 - `Dockerfile`
 - `README.md`
 
-### 3. Set API Key di Secrets
+### 3. Set API Key & Pricing di Secrets
 1. Di Hugging Face Space, buka tab **Settings**
 2. Scroll ke bagian **Repository secrets**
-3. Tambahkan secret baru:
-   - **Name**: `VIRTUSIM_API_KEY`
-   - **Value**: API key VirtuSIM Anda
+3. Tambahkan secrets berikut:
+   - **Name**: `VIRTUSIM_API_KEY` | **Value**: API key VirtuSIM Anda
+   - **Name**: `MARKUP_PERCENTAGE` | **Value**: `30` (markup 30%, opsional)
+   - **Name**: `FIXED_MARKUP` | **Value**: `0` (markup tetap dalam IDR, opsional)
+   - **Name**: `MIN_PRICE` | **Value**: `1000` (harga minimum dalam IDR, opsional)
 
 ### 4. Deploy
 Hugging Face akan otomatis build dan deploy aplikasi Anda.
@@ -86,7 +88,17 @@ Content-Type: application/json
 GET /services
 ```
 
-#### 6. Health Check
+#### 6. Get Services (dengan harga jual)
+```http
+GET /services
+```
+
+#### 7. Calculate Pricing
+```http
+GET /pricing/{original_price}
+```
+
+#### 8. Health Check
 ```http
 GET /health
 ```
@@ -102,6 +114,61 @@ GET /health
 - `2` = Cancel
 - `3` = Resend
 - `4` = Complete
+
+## 💰 Sistem Pricing & Markup
+
+Backend ini mendukung sistem markup otomatis untuk menambahkan profit pada harga VirtuSIM.
+
+### Konfigurasi Pricing
+
+Set environment variables berikut di Hugging Face Secrets:
+
+| Variable | Default | Deskripsi |
+|----------|---------|-----------|
+| `MARKUP_PERCENTAGE` | `30` | Markup persentase (%) |
+| `FIXED_MARKUP` | `0` | Markup tetap (IDR) |
+| `MIN_PRICE` | `1000` | Harga minimum (IDR) |
+
+### Cara Kerja Markup
+
+1. **Harga Asli**: Dari VirtuSIM API
+2. **Markup Persentase**: `harga_asli * (1 + markup_percentage/100)`
+3. **Markup Tetap**: `+ fixed_markup`
+4. **Minimum Price**: `max(hasil, min_price)`
+5. **Pembulatan**: Dibulatkan ke kelipatan 100
+
+### Contoh Perhitungan
+
+Harga asli: Rp 5.000
+- Markup 30%: Rp 5.000 × 1.30 = Rp 6.500
+- Fixed markup: Rp 6.500 + Rp 0 = Rp 6.500
+- Minimum price: max(Rp 6.500, Rp 1.000) = Rp 6.500
+- Pembulatan: Rp 6.500
+- **Profit**: Rp 1.500
+
+### Response Format Services
+
+```json
+{
+  "success": true,
+  "data": {
+    "data": [
+      {
+        "id": "26",
+        "name": "WhatsApp",
+        "price": "5000",
+        "display_price": 6500,
+        "pricing": {
+          "original_price": 5000,
+          "markup_percentage": 30,
+          "fixed_markup": 0,
+          "selling_price": 6500,
+          "profit": 1500
+        }
+      }
+    ]
+  }
+}
 
 ## 📖 API Documentation
 

@@ -46,17 +46,25 @@ virtusim-backend/
 └── .gitignore        # Git ignore rules
 ```
 
-### 3. Set API Key di Secrets
+### 3. Set API Key & Pricing di Secrets
 
 1. **Buka Settings Space**
    - Di halaman space Anda, klik tab **Settings**
    - Scroll ke bagian **Repository secrets**
 
-2. **Tambah Secret**
-   - Klik **New secret**
+2. **Tambah Secrets**
+   Tambahkan secrets berikut satu per satu:
+   
+   **API Key (Wajib):**
    - **Name**: `VIRTUSIM_API_KEY`
-   - **Value**: Masukkan API key VirtuSIM Anda
-   - Klik **Add secret**
+   - **Value**: API key VirtuSIM Anda
+   
+   **Pricing Configuration (Opsional untuk profit):**
+   - **Name**: `MARKUP_PERCENTAGE` | **Value**: `30` (markup 30%)
+   - **Name**: `FIXED_MARKUP` | **Value**: `500` (markup tetap Rp 500)
+   - **Name**: `MIN_PRICE` | **Value**: `2000` (harga minimum Rp 2.000)
+   
+   Klik **Add secret** untuk setiap secret
 
 ### 4. Commit & Push
 

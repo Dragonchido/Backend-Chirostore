@@ -32,6 +32,11 @@ security = HTTPBearer(auto_error=False)
 VIRTUSIM_API_URL = "https://virtusim.com/api/json.php"
 VIRTUSIM_API_KEY = os.getenv("VIRTUSIM_API_KEY")  # API key dari Hugging Face secrets
 
+# Pricing Configuration
+MARKUP_PERCENTAGE = float(os.getenv("MARKUP_PERCENTAGE", "30"))  # Default 30% markup
+FIXED_MARKUP = float(os.getenv("FIXED_MARKUP", "0"))  # Fixed markup amount
+MIN_PRICE = float(os.getenv("MIN_PRICE", "1000"))  # Minimum price in IDR
+
 # Enums
 class OperatorType(str, Enum):
     telkomsel = "telkomsel"
@@ -63,6 +68,55 @@ class ApiResponse(BaseModel):
     message: Optional[str] = None
 
 # Helper functions
+def calculate_selling_price(original_price: float) -> dict:
+    """Calculate selling price with markup"""
+    try:
+        # Apply percentage markup
+        price_with_percentage = original_price * (1 + MARKUP_PERCENTAGE / 100)
+        
+        # Add fixed markup
+        final_price = price_with_percentage + FIXED_MARKUP
+        
+        # Ensure minimum price
+        final_price = max(final_price, MIN_PRICE)
+        
+        # Round to nearest 100 (common practice in Indonesia)
+        final_price = round(final_price / 100) * 100
+        
+        return {
+            "original_price": original_price,
+            "markup_percentage": MARKUP_PERCENTAGE,
+            "fixed_markup": FIXED_MARKUP,
+            "selling_price": final_price,
+            "profit": final_price - original_price
+        }
+    except:
+        return {
+            "original_price": original_price,
+            "selling_price": original_price,
+            "profit": 0,
+            "error": "Failed to calculate markup"
+        }
+
+def process_services_pricing(services_data: dict) -> dict:
+    """Process services data and add selling prices"""
+    try:
+        if isinstance(services_data, dict) and "data" in services_data:
+            services = services_data["data"]
+            if isinstance(services, list):
+                for service in services:
+                    if isinstance(service, dict) and "price" in service:
+                        try:
+                            original_price = float(service["price"])
+                            pricing_info = calculate_selling_price(original_price)
+                            service["pricing"] = pricing_info
+                            service["display_price"] = pricing_info["selling_price"]
+                        except:
+                            service["display_price"] = service["price"]
+        return services_data
+    except:
+        return services_data
+
 async def get_api_key(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
     """Extract API key dari environment variable atau Authorization header"""
     # Prioritas: Environment variable (Hugging Face secrets)
@@ -122,12 +176,18 @@ async def root():
         "status": "running",
         "api_key_configured": bool(VIRTUSIM_API_KEY),
         "documentation": "/docs",
+        "pricing_config": {
+            "markup_percentage": f"{MARKUP_PERCENTAGE}%",
+            "fixed_markup": f"Rp {FIXED_MARKUP:,.0f}",
+            "minimum_price": f"Rp {MIN_PRICE:,.0f}"
+        },
         "endpoints": {
             "POST /order": "Buat pesanan baru",
             "GET /active-orders": "Dapatkan pesanan aktif",
             "GET /status/{order_id}": "Cek status pesanan",
             "PUT /status": "Update status pesanan",
-            "GET /services": "Dapatkan layanan tersedia"
+            "GET /services": "Dapatkan layanan tersedia dengan harga jual",
+            "GET /pricing/{original_price}": "Hitung harga jual dari harga asli"
         }
     }
 
@@ -211,7 +271,7 @@ async def update_order_status(
 
 @app.get("/services", response_model=ApiResponse)
 async def get_services(api_key: str = Depends(get_api_key)):
-    """Dapatkan layanan yang tersedia"""
+    """Dapatkan layanan yang tersedia dengan harga jual"""
     post_data = {
         'api_key': api_key,
         'action': 'services'
@@ -219,11 +279,31 @@ async def get_services(api_key: str = Depends(get_api_key)):
     
     result = await call_virtusim_api(post_data)
     
+    # Process pricing untuk menambahkan markup
+    processed_result = process_services_pricing(result)
+    
     return ApiResponse(
         success=True,
-        data=result,
-        message="Layanan berhasil diambil"
+        data=processed_result,
+        message="Layanan berhasil diambil dengan harga jual"
     )
+
+@app.get("/pricing/{original_price}")
+async def calculate_price(original_price: float):
+    """Hitung harga jual berdasarkan harga asli"""
+    if original_price <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Harga asli harus lebih dari 0"
+        )
+    
+    pricing_info = calculate_selling_price(original_price)
+    
+    return {
+        "success": True,
+        "data": pricing_info,
+        "message": "Perhitungan harga berhasil"
+    }
 
 # Health check endpoint
 @app.get("/health")
