@@ -1,46 +1,73 @@
-# VirtuSIM API Backend
+# 🎯 VirtuSIM API Backend - Chirostore
 
-Backend API untuk layanan virtual phone number VirtuSIM yang di-deploy di Hugging Face Spaces.
+Backend API untuk layanan virtual phone number VirtuSIM dengan sistem pricing otomatis, di-deploy di Hugging Face Spaces dengan GitHub Actions.
 
-## 🚀 Fitur
+## 🚀 Fitur Utama
 
+### 🔧 Core Backend
 - ✅ RESTful API dengan FastAPI
 - ✅ API Key dari Hugging Face Secrets (VIRTUSIM_API_KEY)
 - ✅ CORS support untuk frontend Vercel
 - ✅ Dokumentasi API otomatis (Swagger UI)
 - ✅ Error handling yang komprehensif
-- ✅ Ready untuk production
+- ✅ Auto deployment ke Hugging Face Spaces
 
-## 📋 Setup di Hugging Face
+### 💰 Sistem Pricing Otomatis
+- ✅ Markup percentage yang dapat dikonfigurasi (default: 30%)
+- ✅ Fixed markup dalam IDR
+- ✅ Minimum price enforcement
+- ✅ Smart price rounding ke 100 IDR terdekat
+- ✅ Automatic profit calculation
+- ✅ Multiple pricing strategies
 
-### 1. Buat Space Baru
+### 🤖 Auto Deployment
+- ✅ GitHub Actions workflow
+- ✅ Auto deploy saat push ke main branch
+- ✅ Auto deploy saat PR merged
+- ✅ Deployment status di PR comments
+
+## 🚀 Live Deployment
+
+**🔗 Live URL**: https://huggingface.co/spaces/Minatoz997/Chirostore  
+**📖 API Docs**: https://minatoz997-chirostore.hf.space/docs  
+**🔍 Health Check**: https://minatoz997-chirostore.hf.space/health
+
+## ⚙️ Auto Deployment Setup
+
+### 1. GitHub Repository Secrets
+Tambahkan secrets berikut di GitHub repository settings:
+
+1. **HF_TOKEN**: Hugging Face access token
+   - Buka [HF Settings](https://huggingface.co/settings/tokens)
+   - Create new token dengan write access
+   - Copy token ke GitHub Secrets
+
+### 2. Hugging Face Space Secrets
+Set secrets berikut di Hugging Face Space:
+
+1. **VIRTUSIM_API_KEY**: API key VirtuSIM Anda
+2. **MARKUP_PERCENTAGE**: Persentase markup (optional, default: 30)
+3. **FIXED_MARKUP**: Fixed markup dalam IDR (optional, default: 0)
+4. **MIN_PRICE**: Minimum price dalam IDR (optional, default: 1000)
+
+### 3. Deployment Workflow
+- ✅ **Auto deploy** saat push ke `main` branch
+- ✅ **Auto deploy** saat PR di-merge ke `main`
+- ✅ **Status comment** di PR setelah deployment
+- ✅ **Error handling** jika deployment gagal
+
+### 4. Manual Setup (Alternative)
+Jika ingin setup manual tanpa GitHub Actions:
+
 1. Buka [Hugging Face Spaces](https://huggingface.co/spaces)
 2. Klik "Create new Space"
 3. Pilih **Docker** sebagai SDK
-4. Beri nama space (contoh: `username/virtusim-backend`)
-
-### 2. Upload Files
-Upload semua file dari repository ini ke Hugging Face Space:
-- `app.py` (main application)
-- `requirements.txt`
-- `Dockerfile`
-- `README.md`
-
-### 3. Set API Key & Pricing di Secrets
-1. Di Hugging Face Space, buka tab **Settings**
-2. Scroll ke bagian **Repository secrets**
-3. Tambahkan secrets berikut:
-   - **Name**: `VIRTUSIM_API_KEY` | **Value**: API key VirtuSIM Anda
-   - **Name**: `MARKUP_PERCENTAGE` | **Value**: `30` (markup 30%, opsional)
-   - **Name**: `FIXED_MARKUP` | **Value**: `0` (markup tetap dalam IDR, opsional)
-   - **Name**: `MIN_PRICE` | **Value**: `1000` (harga minimum dalam IDR, opsional)
-
-### 4. Deploy
-Hugging Face akan otomatis build dan deploy aplikasi Anda.
+4. Upload semua file dari repository ini
+5. Set secrets di Space settings
 
 ## 🔗 API Endpoints
 
-Base URL: `https://your-username-virtusim-backend.hf.space`
+**Base URL**: `https://minatoz997-chirostore.hf.space`
 
 ### Authentication
 API key diambil otomatis dari environment variable `VIRTUSIM_API_KEY`.
@@ -83,22 +110,17 @@ Content-Type: application/json
 }
 ```
 
-#### 5. Get Services
+#### 5. Get Services (dengan harga jual & profit)
 ```http
 GET /services
 ```
 
-#### 6. Get Services (dengan harga jual)
-```http
-GET /services
-```
-
-#### 7. Calculate Pricing
+#### 6. Calculate Pricing
 ```http
 GET /pricing/{original_price}
 ```
 
-#### 8. Health Check
+#### 7. Health Check
 ```http
 GET /health
 ```
@@ -117,9 +139,15 @@ GET /health
 
 ## 💰 Sistem Pricing & Markup
 
-Backend ini mendukung sistem markup otomatis untuk menambahkan profit pada harga VirtuSIM.
+Backend ini mendukup sistem markup otomatis untuk menambahkan profit pada harga VirtuSIM.
 
-### Konfigurasi Pricing
+### 📊 Contoh Profit (Markup 30% + Rp 500)
+- **Rp 5,000** → **Rp 7,000** (Profit: **Rp 2,000** - 40%)
+- **Rp 10,000** → **Rp 13,500** (Profit: **Rp 3,500** - 35%)
+- **Rp 20,000** → **Rp 26,500** (Profit: **Rp 6,500** - 32.5%)
+- **Rp 50,000** → **Rp 65,500** (Profit: **Rp 15,500** - 31%)
+
+### ⚙️ Konfigurasi Pricing
 
 Set environment variables berikut di Hugging Face Secrets:
 
